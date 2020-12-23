@@ -19,12 +19,9 @@ class Reddit {
       let after;
       let count = 0;
       let turn = 1;
+      let finish = false;
       let date = new Date();
-      var month = date.getUTCMonth() + 1; //months from 1-12
-      var day = date.getUTCDate() + 1;
-      var year = date.getUTCFullYear();
-      let today = `${month}-${day}-${year}`;
-      while (subreddits.length < this.maxResults) {
+      while (finish == false) {
         // get popular subreddits from reddit
         let url = `${REDDIT_URL}/subreddits.json?limit=${this.limit}&count=${count}&after=${after}`;
         let results = await axios({
@@ -50,8 +47,8 @@ class Reddit {
             title: subs[s].data.title,
             display_name_prefixed: subs[s].data.display_name_prefixed,
             subscribers: admin.firestore.FieldValue.arrayUnion({
-              date: today,
-              timstamp: Date.now(),
+              date: date.toLocaleDateString(),
+              timestamp: date.toISOString(),
               count: subs[s].data.subscribers,
             }),
             advertiser_category: subs[s].data.advertiser_category,
@@ -59,14 +56,18 @@ class Reddit {
           };
           // save subreddit to database
           let fbRef = this.db.collection("subreddits").doc(sub.name);
-          let commitResults = await fbRef.set(sub, { merge: true });
+          let commitResults = fbRef.set(sub, { merge: true });
           subreddits.push(sub);
         }
         // throttle requests to reddit
         if (turn % this.turns === 0) {
           console.log(`initializing delay of ${this.throttle} ms`);
-          console.log(`total requests: ${this.turn}`);
+          console.log(`total requests: ${turn}`);
           await delay(this.throttle);
+        }
+        if (after == null || subreddits.length > this.maxResults) {
+          finish = true;
+          console.log("done aggregating subreddit data");
         }
         turn++;
       }

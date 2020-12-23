@@ -30,6 +30,10 @@ app.use(function (req, res, next) {
   next();
 });
 
+// authentication
+const auth = require('./auth');
+app.use(auth);
+
 // =========== Routes ===========
 import ingest from './routes/ingest';
 app.use('/ingest', ingest);
