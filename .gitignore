@@ -1,0 +1,11 @@
+node_modules
+.DS_Stores
+.env
+Workspace
+
+serviceKeys.json
+server/creds/
+client/env.txt
+env.server.txt
+
+public.pem
