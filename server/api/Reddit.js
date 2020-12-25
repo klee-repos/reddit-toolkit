@@ -30,7 +30,7 @@ class Reddit {
         });
         // logging
         console.log(url);
-        console.log(results.data);
+        // console.log(results.data);
         // set correct limit in request
         count += this.limit;
         // set correct after in request
@@ -47,8 +47,8 @@ class Reddit {
             title: subs[s].data.title,
             display_name_prefixed: subs[s].data.display_name_prefixed,
             subscribers: admin.firestore.FieldValue.arrayUnion({
-              date: date.toLocaleDateString(),
-              timestamp: date.toISOString(),
+              date: date.toISOString(),
+              timestamp: Date.now(),
               count: subs[s].data.subscribers,
             }),
             advertiser_category: subs[s].data.advertiser_category,
@@ -70,6 +70,63 @@ class Reddit {
           console.log("done aggregating subreddit data");
         }
         turn++;
+      }
+      return subreddits;
+    } catch (e) {
+      console.log(e);
+      return null;
+    }
+  }
+
+  async updateExisting() {
+    try {
+      let subreddits = [];
+      let turn = 1;
+      let date = new Date();
+      let subreddit_subscribers;
+      let position = 0;
+      let snapshot = await this.db.collection("subreddits").get();
+      await snapshot.docs.map((doc) => {
+        subreddits.push(doc.data());
+      });
+      for (let s in subreddits) {
+        while (!subreddit_subscribers) {
+          // get subreddits
+          let display_name_prefixed = subreddits[s].display_name_prefixed;
+          let url = `${REDDIT_URL}/${display_name_prefixed}.json?limit=${this.limit}`;
+          let results = await axios({
+            method: "get",
+            url,
+          });
+          subreddit_subscribers =
+            results.data.data.children[position].data.subreddit_subscribers;
+          if (!subreddit_subscribers) {
+            position++;
+          } else {
+            position = 0;
+          }
+          // throttle requests to reddit
+          if (turn % this.turns === 0) {
+            console.log(`initializing delay of ${this.throttle} ms`);
+            console.log(`total requests: ${turn}`);
+            await delay(this.throttle);
+          }
+          turn++;
+        }
+        // save subreddit to database
+        let data = {
+          date: date.toLocaleDateString(),
+          timestamp: date.toISOString(),
+          count: subreddit_subscribers,
+        };
+        let fbRef = this.db.collection("subreddits").doc(subreddits[s].name);
+        let commitResults = fbRef.set(
+          {
+            subscribers: admin.firestore.FieldValue.arrayUnion(data),
+          },
+          { merge: true }
+        );
+        subreddit_subscribers = null;
       }
       return subreddits;
     } catch (e) {

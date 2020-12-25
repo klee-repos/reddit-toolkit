@@ -36,7 +36,9 @@ app.use(auth);
 
 // =========== Routes ===========
 import ingest from './routes/ingest';
+import insight from './routes/insight';
 app.use('/ingest', ingest);
+app.use('/insight', insight);
 
 // =========== Firestore ===========
 import Firestore from './api/Firestore';
