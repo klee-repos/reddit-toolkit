@@ -2,6 +2,7 @@ import express from "express";
 const router = express.Router();
 
 import Subreddits from "../api/Subreddits";
+import Twilio from "../api/Twilio";
 
 router.post("/test", async (req, res) => {
   try {
@@ -25,6 +26,13 @@ router.post("/search", async (req, res) => {
     );
     let results = await subreddits.search();
     console.log(results);
+    // send sms
+    if (req.query.sendSMS === "true") {
+      let twilio = new Twilio(req.query.sendTo, parseInt(req.query.limit));
+      let message = await twilio.topGrowingSubreddits(results);
+      let smsResults = await twilio.sendSMS(message);
+      console.log(smsResults);
+    }
     // strack request end time
     let hrend = process.hrtime(hrstart);
     // log request duration
