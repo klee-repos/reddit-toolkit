@@ -37,8 +37,10 @@ app.use(auth);
 // =========== Routes ===========
 import ingest from './routes/ingest';
 import insight from './routes/insight';
+import admin from './routes/admin';
 app.use('/ingest', ingest);
 app.use('/insight', insight);
+app.use('/admin', admin);
 
 // =========== Firestore ===========
 import Firestore from './api/Firestore';
